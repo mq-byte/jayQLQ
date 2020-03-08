@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Hello MUI</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="../css/mui.min.css">
+		<style>
+			html,
+			body {
+				background-color: #efeff4;
+			}
+			
+			.title {
+				padding: 20px 15px 10px;
+				color: #6d6d72;
+				font-size: 15px;
+				background-color: #fff;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="pullrefresh" class="mui-content mui-scroll-wrapper">
+			<div class="mui-scroll" >
+				<!-- <div class="mui-content"> -->
+				<div class="mui-card">
+					<ul id="box" class="mui-table-view mui-table-view-chevron" >
+						
+					</ul>
+				</div>
+				<!-- </div> -->
+			</div>
+		</div>
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/data.js"></script>
+		<script>	
+			
+			var html = '';
+			
+			for(var i = 0;i < data.length;++i){
+				html += `
+					<li class="mui-table-view-cell mui-collapse">
+						<a class="mui-navigate-right" href="#">${data[i].title}</a>
+						<ul class="mui-table-view mui-table-view-chevron">`;
+				var item = data[i].data;
+				var html2 = ''
+				for(var j = 0;j < item.length;++j){
+					html2 +=`
+					<li class="mui-table-view-cell musiclist" data-x="${i}" data-y="${j}">
+						<a class="mui-navigate-right"  href="#">${item[j].title}</a>
+					</li>`
+				}	
+				html += html2;
+				html += `		</ul>
+						</li>
+					`;
+			}
+			
+			// console.log(html);
+			document.querySelector('#box').innerHTML = html;
+			
+			mui.init({
+				swipeBack: false,
+				keyEventBind: {
+					backbutton: false //关闭back按键监听
+				}
+			});
+			mui('.mui-scroll-wrapper').scroll({
+				deceleration: 0.0005 //flick 减速系数，系数越大，滚动速度越慢，滚动距离越小，默认值0.0006
+			});
+			
+			var x = null;
+			var y = null;
+			
+			mui('#box').on("tap",".musiclist",function(e){
+				plus.webview.currentWebview().parent().evalJS('group.switchTab("music-play")')
+				x = this.getAttribute("data-x");
+				y = this.getAttribute("data-y");
+				if(plus.webview.getWebviewById('music-play')){
+					plus.webview.getWebviewById('music-play').evalJS(`play('${x}','${y}')`);
+				}else{
+					localStorage.setItem('tap','yes');
+					localStorage.setItem('x',x+'');
+					localStorage.setItem('y',y+'');
+				}
+				
+			});
+			
+		</script>
+	</body>
+
+</html>

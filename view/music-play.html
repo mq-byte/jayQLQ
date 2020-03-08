@@ -1,0 +1,266 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		
+		<style type="text/css">
+			a {
+				color: #8F8F94;
+				margin: 3px;
+				width: 50px;
+				height: 50px;
+				display: inline-block;
+				text-align: center;
+				background-color: #fff;
+				border: 1px solid #ddd;
+				border-radius: 25px;
+				background-clip: padding-box;
+			}
+			a .mui-icon {
+				margin-top: 12px;
+			}
+			#processBox{
+				padding: 0 50px;
+				position: relative;
+			}
+			.startTime{
+				position: absolute;
+				left: 2px;
+				top: -10px;
+				opacity: .5;
+			}
+			.endTime{
+				position: absolute;
+				right: 2px;
+				top: -10px;
+				opacity: .5;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="musicname" style="text-align: center;"></div>
+		<div class="error" style="text-align: center;line-height: 50px;"></div>
+		<p style="display: none;" class="loading mui-progressbar mui-progressbar-infinite"></p>
+		<!-- <div>sdfdsf</div> -->
+		<div id="processBox" style="position: fixed;bottom: 150px;height: 10px;width: 100%;">
+			<span class="startTime">00:00</span>
+			<!-- <input  id="field-range-input" type="range" class='block-range' value="50" min="0" max="100" style="width: 100%;"> -->
+			<p class="pr mui-progressbar mui-progressbar-in" ><span></span></p>
+			<span class="endTime">00:00</span>
+		</div>
+		
+		<div style="text-align: center;position: fixed;bottom: 50px;width: 100%;" class="oprator">
+			<a class="pre"><span class="mui-icon mui-icon-back"></span></a>
+			<a class="play"><span class="mui-icon mui-icon-mic"></span></a>
+			<a class="pause" style="display: none;"><span class="mui-icon mui-icon-micoff " ></span></a>
+			<a class="next"><span class="mui-icon mui-icon-forward"></span></a>
+		</div>
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/data.js"></script>
+		<script type="text/javascript">
+			mui.init({
+			  gestureConfig:{
+			   tap: true, //默认为true
+			   doubletap: true, //默认为false
+			   longtap: true, //默认为false
+			   swipe: true, //默认为true
+			   drag: true, //默认为true
+			   hold:true,//默认为false，不监听
+			   release:true//默认为false，不监听
+			  }
+			})
+			var p = null;
+			var gx = 0,gy = 0;
+			var endTime = 0;
+			var realTime = 0;
+			var currentTimeS = 0;
+			var currentTime = 0;
+			var currentTimeInterval = null;
+			function plusReady(){
+				var initX = localStorage.getItem('x');
+				var initY = localStorage.getItem('y');
+				gx = initX;
+				gy = initY;
+				
+				var initTap = localStorage.getItem('tap');
+				var first = initTap==='yes';
+				if(first){
+					mui('.loading')[0].style.display = 'block';
+				}
+				p = plus.audio.createPlayer({
+					autoplay:first,
+					backgroundControl:true,
+					src:encodeURI(data[initX].data[initY].info.sqPlayInfo.playUrl)
+				});
+				localStorage.setItem('tap','no')
+				mui('.musicname')[0].innerHTML = data[initX].data[initY].title;
+				
+				
+				p.addEventListener('canplay',function(){
+					console.log('canplay---------',p.getDuration());
+				});
+				p.addEventListener('waiting',function(){
+					console.log('waiting----------',p.getDuration());
+				});
+				p.addEventListener('play',function(){
+					mui('.pause')[0].style.display = 'inline-block';
+					mui('.play')[0].style.display = 'none';
+					console.log('play----------',p.getDuration());
+					
+					
+					var endtimeInterval = setInterval(function(){
+						if(p.getDuration()>0){
+							clearInterval(endtimeInterval);
+						}else{
+							return;
+						}
+						realTime = p.getDuration();
+						var a = Math.floor(realTime/60);
+						var b = Math.floor(realTime - a*60);
+						a = a < 10?'0'+a:a+'';
+						b = b < 10?'0'+b:b+'';
+						a += ":";
+						endTime = a+b;
+						mui('.loading')[0].style.display = 'none';
+						mui('.endTime')[0].innerHTML = endTime;
+					},50);
+					
+					clearInterval(currentTimeInterval);
+					currentTimeInterval = setInterval(function(){
+						currentTime = p.getPosition();
+						console.log(currentTime);
+						var a = Math.floor(currentTime/60);
+						var b = Math.floor(currentTime - a*60);
+						a = a < 10?'0'+a:a+'';
+						b = b < 10?'0'+b:b+'';
+						a += ":";
+						currentTimeS = a+b;
+						mui('.startTime')[0].innerHTML = currentTimeS;
+						mui('.pr').progressbar().setProgress((currentTime/realTime)*100)
+					},1000);
+				});
+				p.addEventListener('pause',function(){
+					mui('.play')[0].style.display = 'inline-block';
+					mui('.pause')[0].style.display = 'none';
+					console.log('pause----------');
+				});
+				
+				p.addEventListener('ended',function(){
+					var hx = gx;
+					var hy = gy;
+					if(data[hx].data.length > hy + 1){
+						hy++;
+					}else{
+						if(data.length > hx + 1){
+							hx++;
+							hy = 0;
+						}else{
+							hx = 0;
+							hy = 0;
+						}
+					}
+					play(hx,hy)
+				});
+				
+				
+				p.addEventListener('seeking',function(){
+					console.log('seeking--------------');
+				});
+				
+				p.addEventListener('error',function(){
+					console.log('error--------------');
+				});
+				
+				mui('.oprator').on('tap','.pause',function(){
+					p.pause();
+				})
+				
+				mui('.oprator').on('tap','.play',function(){
+					p.play();
+				})
+				
+				
+				
+				
+				mui('.oprator').on('tap','.next',function(){
+					var hx = gx;
+					var hy = gy;
+					if(data[hx].data.length > hy + 1){
+						hy++;
+					}else{
+						if(data.length > hx + 1){
+							hx++;
+							hy = 0;
+						}else{
+							hx = 0;
+							hy = 0;
+						}
+					}
+					play(hx,hy)
+				})
+				
+				mui('.oprator').on('tap','.pre',function(){
+					var hx = gx;
+					var hy = gy;
+					if(hy <= 0){
+						if(hx <= 0){
+							hx = data.length - 1;
+							hy = data[hx].data.length - 1;
+						}else{
+							hx--;
+							hy = data[hx].data.length - 1;
+						}
+					}else{
+						hy--
+					}
+					play(hx,hy);
+				})
+				
+				
+			}
+			
+			
+			if(window.plus){
+				plusReady();
+			}else{
+				document.addEventListener('plusready', plusReady, false);
+			}
+			
+			
+			function play(x,y){
+				if(gx == x && gy == y){
+					return;
+				}
+				mui('.pr').progressbar().setProgress(0);
+				clearInterval(currentTimeInterval);
+				mui('.endTime')[0].innerHTML = '00:00';
+				mui('.startTime')[0].innerHTML = '00:00';
+				mui('.loading')[0].style.display = 'block';
+				gx = x;
+				gy = y;
+				mui('.musicname')[0].innerHTML = data[gx].data[gy].title;
+				if(data[gx].data[gy].info){
+					mui('.error')[0].innerHTML = '';
+					p.setStyles({
+						autoplay:true,
+						backgroundControl:true,
+						src:encodeURI(data[gx].data[gy].info.sqPlayInfo.playUrl)
+					});
+				}else{
+					mui('.error')[0].innerHTML = '暂无资源';
+					p.stop();
+				}
+			}
+			
+			
+			
+			
+		</script>
+	</body>
+
+</html>

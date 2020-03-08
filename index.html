@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Hello MUI</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+		<link rel="stylesheet" href="./css/mui.min.css">
+		<style>
+			html,
+			body {
+				background-color: #efeff4;
+			}
+			
+			.mui-bar~.mui-content .mui-fullscreen {
+				top: 44px;
+				height: auto;
+			}
+			
+			.mui-pull-top-tips {
+				position: absolute;
+				top: -20px;
+				left: 50%;
+				margin-left: -25px;
+				width: 40px;
+				height: 40px;
+				border-radius: 100%;
+				z-index: 1;
+			}
+			
+			.mui-bar~.mui-pull-top-tips {
+				top: 24px;
+			}
+			
+			.mui-pull-top-wrapper {
+				width: 42px;
+				height: 42px;
+				display: block;
+				text-align: center;
+				background-color: #efeff4;
+				border: 1px solid #ddd;
+				border-radius: 25px;
+				background-clip: padding-box;
+				box-shadow: 0 4px 10px #bbb;
+				overflow: hidden;
+			}
+			
+			.mui-pull-top-tips.mui-transitioning {
+				-webkit-transition-duration: 200ms;
+				transition-duration: 200ms;
+			}
+			
+			.mui-pull-top-tips .mui-pull-loading {
+				/*-webkit-backface-visibility: hidden;
+				-webkit-transition-duration: 400ms;
+				transition-duration: 400ms;*/
+				margin: 0;
+			}
+			
+			.mui-pull-top-wrapper .mui-icon,
+			.mui-pull-top-wrapper .mui-spinner {
+				margin-top: 7px;
+			}
+			
+			.mui-pull-top-wrapper .mui-icon.mui-reverse {
+				/*-webkit-transform: rotate(180deg) translateZ(0);*/
+			}
+			
+			.mui-pull-bottom-tips {
+				text-align: center;
+				background-color: #efeff4;
+				font-size: 15px;
+				line-height: 40px;
+				color: #777;
+			}
+			
+			.mui-pull-top-canvas {
+				overflow: hidden;
+				background-color: #fafafa;
+				border-radius: 40px;
+				box-shadow: 0 4px 10px #bbb;
+				width: 40px;
+				height: 40px;
+				margin: 0 auto;
+			}
+			
+			.mui-pull-top-canvas canvas {
+				width: 40px;
+			}
+			
+			.mui-slider-indicator.mui-segmented-control {
+				background-color: #efeff4;
+			}
+		</style>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<!-- <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a> -->
+			<h1 class="mui-title">jay-paly</h1>
+			<a id="share" class="mui-icon mui-icon mui-icon-redo mui-pull-right"></a>
+		</header>
+		<div class="mui-content">
+			<div id="slider" class="mui-slider mui-fullscreen">
+				<div id="sliderSegmentedControl" class="mui-scroll-wrapper mui-slider-indicator mui-segmented-control mui-segmented-control-inverted">
+					<div class="mui-scroll">
+						<a class="mui-control-item mui-active" href="#item1mobile" data-wid="music-list">
+							list
+						</a>
+						<a class="mui-control-item" href="#item2mobile" data-wid="music-play">
+							play
+						</a>
+					</div>
+				</div>
+
+			</div>
+		</div>
+		<script src="./js/mui.min.js"></script>
+		<!-- <script type="text/javascript" src="./js/common.js"></script> -->
+		<script src="./js/webviewGroup.js" type="text/javascript" charset="utf-8"></script>
+		<script>
+			mui.init();
+			var group = null;
+			var sweixin=null;
+			var buttons=[
+			  {title:'我的好友',extra:{scene:'WXSceneSession'}},
+			  {title:'朋友圈',extra:{scene:'WXSceneTimeline'}},
+			  {title:'我的收藏',extra:{scene:'WXSceneFavorite'}}
+			];
+			function updateSerivces(){
+				plus.share.getServices(function(s){
+					shares={};
+					for(var i in s){
+						var t=s[i];
+						shares[t.id]=t;
+					}
+			    sweixin=shares['weixin'];
+				sqq=shares['qq'];
+				});
+			}
+			function shareText(){
+			  var msg={type:'text',content:'jayQLQ免费听'};
+			  sweixin?plus.nativeUI.actionSheet({title:'分享文本到微信',cancel:'取消',buttons:buttons}, function(e){
+			  	(e.index>0)&&share(sweixin, msg, buttons[e.index-1]);
+			  }):plus.nativeUI.alert('当前环境不支持微信分享操作!');
+			}
+			// 分享文本QQ
+			function shareTextQQ(){
+			  var msg={type:'text'};
+			  msg.title = 'jayQLQ免费听';
+			  // msg.href='http://www.dcloud.io';
+			  sqq?shareQQ(sqq, msg):plus.nativeUI.alert('当前环境不支持QQ分享操作!');
+			}
+			
+			// 分享QQ
+			function shareQQ(srv, msg, button){
+			  if(!srv){
+			    return;
+			  }
+			  button&&(msg.extra=button.extra);
+				// 发送分享
+				if(srv.authenticated){
+					doShareQQ(srv, msg);
+				}else{
+					srv.authorize(function(){
+						doShareQQ(srv, msg);
+					});
+				}
+			}
+			// 发送分享QQ
+			function doShareQQ(srv, msg){
+				srv.send(msg);
+			}
+			// 分享
+			function share(srv, msg, button){
+			  if(!srv){
+			    return;
+			  }
+			  button&&(msg.extra=button.extra);
+				// 发送分享
+				if(srv.authenticated){
+					doShare(srv, msg);
+				}else{
+					srv.authorize(function(){
+						doShare(srv, msg);
+					}, function(e){
+						outLine('认证授权失败：'+JSON.stringify(e));
+					});
+				}  
+			}
+			// 发送分享
+			function doShare(srv, msg){
+				srv.send(msg);
+			}
+			
+			
+			mui.plusReady(function() {
+				updateSerivces();
+				document.getElementById('share').addEventListener('tap',function(){
+					console.log('-------');
+					var btnArray = [{title:"QQ"},{title:"微信"}];
+					plus.nativeUI.actionSheet( {
+						title:"分享",
+						cancel:"取消",
+						buttons:btnArray
+					}, function(e){
+						var index = e.index;
+						console.log(index);
+						switch (index){
+							case 0:
+								break;
+							case 1:
+								shareTextQQ();
+								break;
+							case 2:
+								shareText();
+								break;
+						}
+						// info.innerHTML = text+"\"按钮";
+					} );
+				})
+				
+				
+				var _self = plus.webview.currentWebview();
+				group = new webviewGroup(_self.id, {
+					items: [{
+						id: "music-list",
+						url: "./view/music-list.html",
+						extras: {}
+					}, {
+						id: "music-play",
+						url: "./view/music-play.html",
+						extras: {}
+					}],
+					onChange: function(obj) {
+						var c = document.querySelector(".mui-control-item.mui-active");
+						if(c) {
+							c.classList.remove("mui-active");
+						}
+						var target = document.querySelector(".mui-scroll .mui-control-item:nth-child(" + (parseInt(obj.index) + 1) + ")");
+						target.classList.add("mui-active");
+						if(target.scrollIntoView) {
+							target.scrollIntoView();
+						}
+					}
+				});
+				mui(".mui-scroll").on("tap", ".mui-control-item", function(e) {
+					var wid = this.getAttribute("data-wid");
+					group.switchTab(wid);
+				});
+
+			});
+		</script>
+	</body>
+
+</html>
